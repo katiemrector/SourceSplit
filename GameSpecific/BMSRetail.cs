@@ -13,7 +13,7 @@ namespace LiveSplit.SourceSplit.GameSpecific
 
         private bool _onceFlag;
         private Vector3f _startPos = new Vector3f(113f, -1225f, 582f);
-        private IntPtr _nihiPtr;
+        private IntPtr _nihiPtr = IntPtr.Zero;
         private int _baseEntityHealthOffset = -1;
 
         public BMSRetail()
@@ -42,10 +42,7 @@ namespace LiveSplit.SourceSplit.GameSpecific
             _onceFlag = false;
 
             if (this.IsLastMap && state.PlayerEntInfo.EntityPtr != IntPtr.Zero)
-            {
                 _nihiPtr = state.GetEntityByName("nihilanth");
-                Debug.WriteLine("Nihilanth pointer = 0x" + _nihiPtr.ToString("X"));
-            }
         }
 
         public override GameSupportResult OnUpdate(GameState state)
@@ -63,22 +60,28 @@ namespace LiveSplit.SourceSplit.GameSpecific
                     return GameSupportResult.PlayerGainedControl;
                 }
             }
-            else if (this.IsLastMap && _nihiPtr != IntPtr.Zero)
+            else if (this.IsLastMap)
             {
-                int nihiHealth;
-                state.GameProcess.ReadValue(_nihiPtr + _baseEntityHealthOffset, out nihiHealth);
-                if (nihiHealth <= 0)
+                if (_nihiPtr != IntPtr.Zero)
                 {
-                    int health;
-                    state.GameProcess.ReadValue(state.PlayerEntInfo.EntityPtr + _baseEntityHealthOffset, out health);
-
-                    if (health > 0)
+                    Debug.WriteLine("Nihilanth pointer = 0x" + _nihiPtr.ToString("X"));
+                    int nihiHealth;
+                    state.GameProcess.ReadValue(_nihiPtr + _baseEntityHealthOffset, out nihiHealth);
+                    if (nihiHealth <= 0)
                     {
-                        Debug.WriteLine("black mesa end");
-                        _onceFlag = true;
-                        return GameSupportResult.PlayerLostControl;
+                        int health;
+                        state.GameProcess.ReadValue(state.PlayerEntInfo.EntityPtr + _baseEntityHealthOffset, out health);
+
+                        if (health > 0)
+                        {
+                            Debug.WriteLine("black mesa end");
+                            _onceFlag = true;
+                            return GameSupportResult.PlayerLostControl;
+                        }
                     }
                 }
+                else
+                    _nihiPtr = state.GetEntityByName("nihilanth");
             }
             return GameSupportResult.DoNothing;
         }
